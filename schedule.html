@@ -50,7 +50,7 @@
                 <h2 class="text-2xl font-bold mb-6 border-b pb-3">ステップ2: 条件を設定</h2>
                 <div class="flex-grow">
                     <!-- Calendar Selection -->
-                    <div class="mb-6">
+                    <div class="mb-4">
                         <label class="block text-lg font-semibold text-gray-700 mb-2">1. 空き時間を調べるカレンダー</label>
                         <div id="calendar-list" class="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3 bg-gray-50">
                             <p class="text-gray-500">カレンダーを読み込んでいます...</p>
@@ -58,7 +58,7 @@
                     </div>
 
                     <!-- Date Range -->
-                    <div class="mb-6">
+                    <div class="mb-4">
                         <label class="block text-lg font-semibold text-gray-700 mb-2">2. 期間</label>
                         <div class="flex items-center space-x-2">
                             <input type="date" id="start-date" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
@@ -68,7 +68,7 @@
                     </div>
 
                     <!-- Time Window -->
-                    <div class="mb-6">
+                    <div class="mb-4">
                         <label class="block text-lg font-semibold text-gray-700 mb-2">3. 時間帯</label>
                          <div class="flex items-center space-x-2">
                             <input type="time" id="start-time" value="10:00" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
@@ -78,21 +78,29 @@
                     </div>
 
                     <!-- Meeting Duration -->
-                    <div class="mb-6">
+                    <div class="mb-4">
                         <label for="duration" class="block text-lg font-semibold text-gray-700 mb-2">4. 所要時間（分）</label>
                         <input type="number" id="duration" value="60" min="30" step="30" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
                     </div>
 
                     <!-- Exclude Time Window -->
-                    <div class="mb-6">
+                    <div class="mb-4">
                         <div class="flex items-center mb-2">
-                             <input type="checkbox" id="exclude-checkbox" class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked>
-                            <label for="exclude-checkbox" class="ml-3 block text-lg font-semibold text-gray-700">5. 除外する時間帯（毎日）</label>
+                             <input type="checkbox" id="exclude-time-checkbox" class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked>
+                            <label for="exclude-time-checkbox" class="ml-3 block text-lg font-semibold text-gray-700">5. 除外する時間帯（毎日）</label>
                         </div>
                         <div id="exclude-time-inputs" class="flex items-center space-x-2 transition-opacity duration-300">
                             <input type="time" id="exclude-start-time" value="12:00" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
                             <span class="text-gray-600">〜</span>
                             <input type="time" id="exclude-end-time" value="13:00" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    
+                    <!-- Exclude Weekends and Holidays -->
+                    <div class="mb-4">
+                        <div class="flex items-center">
+                             <input type="checkbox" id="exclude-holidays-checkbox" class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked>
+                            <label for="exclude-holidays-checkbox" class="ml-3 block text-lg font-semibold text-gray-700">6. 土日・祝日を除外する</label>
                         </div>
                     </div>
                 </div>
@@ -136,8 +144,9 @@
         const signoutButton = document.getElementById('signout_button');
         const generateButton = document.getElementById('generate-button');
         const copyButton = document.getElementById('copy-button');
-        const excludeCheckbox = document.getElementById('exclude-checkbox');
+        const excludeTimeCheckbox = document.getElementById('exclude-time-checkbox');
         const excludeTimeInputs = document.getElementById('exclude-time-inputs');
+        const excludeHolidaysCheckbox = document.getElementById('exclude-holidays-checkbox');
         
         let gapiInited = false;
         let gisInited = false;
@@ -164,7 +173,6 @@
                 callback: handleAuthResponse,
             });
             gisInited = true;
-            // Try a silent login on page load
             tokenClient.requestAccessToken({prompt: 'none'});
             maybeEnableButtons();
         }
@@ -187,7 +195,6 @@
         async function handleAuthResponse(resp) {
             const authMessage = document.getElementById('auth-message');
             if (resp.error !== undefined) {
-                // This can happen on silent login attempt, so don't show an error to the user
                 console.log('Silent login failed or user not logged in.');
                 return;
             }
@@ -314,47 +321,61 @@
                 const timeMin = new Date(`${startDateStr}T00:00:00`).toISOString();
                 const timeMax = new Date(`${endDateStr}T23:59:59`).toISOString();
                 
-                const response = await gapi.client.calendar.freebusy.query({
+                const busyTimes = [];
+                
+                // 1. Get user's busy times
+                const freeBusyResponse = await gapi.client.calendar.freebusy.query({
                     timeMin,
                     timeMax,
                     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                     items: selectedCalendars,
                 });
-
-                const busyTimes = [];
-                Object.values(response.result.calendars).forEach(cal => {
+                Object.values(freeBusyResponse.result.calendars).forEach(cal => {
                     cal.busy.forEach(b => {
-                        busyTimes.push({
-                            start: new Date(b.start),
-                            end: new Date(b.end)
-                        });
+                        busyTimes.push({ start: new Date(b.start), end: new Date(b.end) });
                     });
                 });
 
-                // Add daily excluded time slots to busyTimes if checkbox is checked
-                if (excludeCheckbox.checked) {
+                // 2. Add excluded times if checked
+                if (excludeTimeCheckbox.checked) {
                     const excludeStartTimeStr = document.getElementById('exclude-start-time').value;
                     const excludeEndTimeStr = document.getElementById('exclude-end-time').value;
                     if (excludeStartTimeStr && excludeEndTimeStr) {
                         const [excludeStartHour, excludeStartMinute] = excludeStartTimeStr.split(':').map(Number);
                         const [excludeEndHour, excludeEndMinute] = excludeEndTimeStr.split(':').map(Number);
-
-                        let currentDay = new Date(startDateStr);
-                        currentDay.setHours(0, 0, 0, 0);
+                        let loopDay = new Date(startDateStr);
                         const endDay = new Date(endDateStr);
-                        endDay.setHours(0, 0, 0, 0);
-
-                        while (currentDay <= endDay) {
-                            const excludeStart = new Date(currentDay);
+                        while (loopDay <= endDay) {
+                            const excludeStart = new Date(loopDay);
                             excludeStart.setHours(excludeStartHour, excludeStartMinute, 0, 0);
-                            const excludeEnd = new Date(currentDay);
+                            const excludeEnd = new Date(loopDay);
                             excludeEnd.setHours(excludeEndHour, excludeEndMinute, 0, 0);
-                            
                             if (excludeEnd > excludeStart) {
                                 busyTimes.push({ start: excludeStart, end: excludeEnd });
                             }
-                            currentDay.setDate(currentDay.getDate() + 1);
+                            loopDay.setDate(loopDay.getDate() + 1);
                         }
+                    }
+                }
+
+                // 3. Add weekends and holidays if checked
+                if (excludeHolidaysCheckbox.checked) {
+                    // Add holidays
+                    const holidayCalendarId = 'ja.japanese#holiday@group.v.calendar.google.com';
+                    const holidayResponse = await gapi.client.calendar.events.list({
+                        calendarId: holidayCalendarId,
+                        timeMin: timeMin,
+                        timeMax: timeMax,
+                        singleEvents: true,
+                        orderBy: 'startTime'
+                    });
+                    const holidays = holidayResponse.result.items;
+                    if (holidays && holidays.length > 0) {
+                        holidays.forEach(holiday => {
+                            const holidayStart = new Date(holiday.start.date + 'T00:00:00');
+                            const holidayEnd = new Date(holiday.start.date + 'T23:59:59');
+                            busyTimes.push({ start: holidayStart, end: holidayEnd });
+                        });
                     }
                 }
                 
@@ -404,6 +425,15 @@
             currentDay.setHours(0, 0, 0, 0);
 
             while (currentDay <= endDate) {
+                // Exclude weekends if the checkbox is checked
+                if (excludeHolidaysCheckbox.checked) {
+                    const dayOfWeek = currentDay.getDay();
+                    if (dayOfWeek === 0 || dayOfWeek === 6) { // 0 = Sunday, 6 = Saturday
+                        currentDay.setDate(currentDay.getDate() + 1);
+                        continue;
+                    }
+                }
+
                 const daySlots = [];
                 const searchStart = new Date(currentDay);
                 searchStart.setHours(startHour, startMinute, 0, 0);
@@ -425,9 +455,8 @@
                         if (slotStart < busy.end && slotEnd > busy.start) {
                             isAvailable = false;
                             slotStart = new Date(busy.end);
-                            // Align to the next 30-minute mark after a busy slot
                             const minutes = slotStart.getMinutes();
-                            if (minutes > 0 && minutes < 30) slotStart.setMinutes(30, 0, 0);
+                            if (minutes > 0 && minutes <= 30) slotStart.setMinutes(30, 0, 0);
                             else if (minutes > 30) {
                                 slotStart.setHours(slotStart.getHours() + 1, 0, 0, 0);
                             }
@@ -471,7 +500,6 @@
                 let i = 0;
                 while (i < slots.length) {
                     let j = i;
-                    // Find the end of the consecutive block of 30-min slots
                     while (j + 1 < slots.length &&
                            (slots[j+1].getTime() - slots[j].getTime()) === 30 * 60 * 1000) {
                         j++;
@@ -483,7 +511,6 @@
                     const startHour = startSlot.getHours().toString().padStart(2, '0');
                     const startMinute = startSlot.getMinutes().toString().padStart(2, '0');
                     
-                    // The end of the available range is the end time of a meeting starting at the last possible slot
                     const finalEndTime = new Date(endSlot.getTime() + durationMinutes * 60 * 1000);
                     const endHour = finalEndTime.getHours().toString().padStart(2, '0');
                     const endMinute = finalEndTime.getMinutes().toString().padStart(2, '0');
@@ -500,9 +527,9 @@
         }
 
         // --- UI Helpers ---
-        excludeCheckbox.addEventListener('change', () => {
+        excludeTimeCheckbox.addEventListener('change', () => {
             const inputs = excludeTimeInputs.querySelectorAll('input');
-            if (excludeCheckbox.checked) {
+            if (excludeTimeCheckbox.checked) {
                 excludeTimeInputs.style.opacity = '1';
                 inputs.forEach(input => input.disabled = false);
             } else {
