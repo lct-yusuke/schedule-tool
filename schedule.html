@@ -173,8 +173,10 @@
                 callback: handleAuthResponse,
             });
             gisInited = true;
-            tokenClient.requestAccessToken({prompt: 'none'});
-            maybeEnableButtons();
+            // Try a silent login on page load
+            if (gapi.client.getToken() === null) {
+                 tokenClient.requestAccessToken({prompt: 'none'});
+            }
         }
 
         function maybeEnableButtons() {
@@ -196,6 +198,7 @@
             const authMessage = document.getElementById('auth-message');
             if (resp.error !== undefined) {
                 console.log('Silent login failed or user not logged in.');
+                updateSigninStatus(false);
                 return;
             }
             authMessage.textContent = 'ステップ1: Googleアカウントでログインしてください。';
@@ -221,9 +224,9 @@
             const userEmail = document.getElementById('user-email');
             
             if (isSignedIn) {
-                authorizeButton.classList.add('hidden');
-                userInfo.classList.remove('hidden');
-                mainContent.classList.remove('hidden');
+                authorizeButton.style.display = 'none';
+                userInfo.style.display = 'block';
+                mainContent.style.display = 'grid';
                 
                 try {
                     const primaryCal = await gapi.client.calendar.calendars.get({calendarId: 'primary'});
@@ -236,9 +239,9 @@
                 listCalendars();
                 setDefaultDates();
             } else {
-                authorizeButton.classList.remove('hidden');
-                userInfo.classList.add('hidden');
-                mainContent.classList.add('hidden');
+                authorizeButton.style.display = 'flex';
+                userInfo.style.display = 'none';
+                mainContent.style.display = 'none';
                 userEmail.textContent = '';
                 document.getElementById('calendar-list').innerHTML = '';
                 document.getElementById('output').value = '';
@@ -323,7 +326,6 @@
                 
                 const busyTimes = [];
                 
-                // 1. Get user's busy times
                 const freeBusyResponse = await gapi.client.calendar.freebusy.query({
                     timeMin,
                     timeMax,
@@ -336,7 +338,6 @@
                     });
                 });
 
-                // 2. Add excluded times if checked
                 if (excludeTimeCheckbox.checked) {
                     const excludeStartTimeStr = document.getElementById('exclude-start-time').value;
                     const excludeEndTimeStr = document.getElementById('exclude-end-time').value;
@@ -358,9 +359,8 @@
                     }
                 }
 
-                // 3. Add weekends and holidays if checked
+                const holidaySet = new Set();
                 if (excludeHolidaysCheckbox.checked) {
-                    // Add holidays
                     const holidayCalendarId = 'ja.japanese#holiday@group.v.calendar.google.com';
                     const holidayResponse = await gapi.client.calendar.events.list({
                         calendarId: holidayCalendarId,
@@ -372,14 +372,11 @@
                     const holidays = holidayResponse.result.items;
                     if (holidays && holidays.length > 0) {
                         holidays.forEach(holiday => {
-                            const holidayStart = new Date(holiday.start.date + 'T00:00:00');
-                            const holidayEnd = new Date(holiday.start.date + 'T23:59:59');
-                            busyTimes.push({ start: holidayStart, end: holidayEnd });
+                            holidaySet.add(holiday.start.date);
                         });
                     }
                 }
                 
-                // Sort and merge all busy times
                 busyTimes.sort((a, b) => a.start - b.start);
                 const mergedBusyTimes = [];
                 if (busyTimes.length > 0) {
@@ -402,7 +399,8 @@
                     startTime, 
                     endTime, 
                     duration, 
-                    mergedBusyTimes
+                    mergedBusyTimes,
+                    holidaySet
                 );
                 
                 outputEl.value = formatAvailableSlots(availableSlots, duration);
@@ -416,7 +414,7 @@
             }
         };
 
-        function findAvailableSlots(startDate, endDate, startTimeStr, endTimeStr, durationMinutes, busyTimes) {
+        function findAvailableSlots(startDate, endDate, startTimeStr, endTimeStr, durationMinutes, busyTimes, holidaySet) {
             const availableSlots = [];
             const [startHour, startMinute] = startTimeStr.split(':').map(Number);
             const [endHour, endMinute] = endTimeStr.split(':').map(Number);
@@ -425,10 +423,10 @@
             currentDay.setHours(0, 0, 0, 0);
 
             while (currentDay <= endDate) {
-                // Exclude weekends if the checkbox is checked
+                const dateString = `${currentDay.getFullYear()}-${(currentDay.getMonth() + 1).toString().padStart(2, '0')}-${currentDay.getDate().toString().padStart(2, '0')}`;
                 if (excludeHolidaysCheckbox.checked) {
                     const dayOfWeek = currentDay.getDay();
-                    if (dayOfWeek === 0 || dayOfWeek === 6) { // 0 = Sunday, 6 = Saturday
+                    if (dayOfWeek === 0 || dayOfWeek === 6 || holidaySet.has(dateString)) {
                         currentDay.setDate(currentDay.getDate() + 1);
                         continue;
                     }
