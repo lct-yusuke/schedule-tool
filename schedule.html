@@ -46,45 +46,55 @@
 
         <main id="main-content" class="hidden grid grid-cols-1 md:grid-cols-2 gap-8">
             <!-- Settings Panel -->
-            <div class="bg-white p-6 rounded-xl shadow-md">
+            <div class="bg-white p-6 rounded-xl shadow-md h-full flex flex-col">
                 <h2 class="text-2xl font-bold mb-6 border-b pb-3">ステップ2: 条件を設定</h2>
+                <div class="flex-grow">
+                    <!-- Calendar Selection -->
+                    <div class="mb-6">
+                        <label class="block text-lg font-semibold text-gray-700 mb-2">1. 空き時間を調べるカレンダー</label>
+                        <div id="calendar-list" class="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3 bg-gray-50">
+                            <p class="text-gray-500">カレンダーを読み込んでいます...</p>
+                        </div>
+                    </div>
 
-                <!-- Calendar Selection -->
-                <div class="mb-6">
-                    <label class="block text-lg font-semibold text-gray-700 mb-2">1. 空き時間を調べるカレンダー</label>
-                    <div id="calendar-list" class="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3 bg-gray-50">
-                        <p class="text-gray-500">カレンダーを読み込んでいます...</p>
+                    <!-- Date Range -->
+                    <div class="mb-6">
+                        <label class="block text-lg font-semibold text-gray-700 mb-2">2. 期間</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="date" id="start-date" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
+                            <span class="text-gray-600">〜</span>
+                            <input type="date" id="end-date" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <!-- Time Window -->
+                    <div class="mb-6">
+                        <label class="block text-lg font-semibold text-gray-700 mb-2">3. 時間帯</label>
+                         <div class="flex items-center space-x-2">
+                            <input type="time" id="start-time" value="10:00" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
+                            <span class="text-gray-600">〜</span>
+                            <input type="time" id="end-time" value="19:00" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <!-- Meeting Duration -->
+                    <div class="mb-6">
+                        <label for="duration" class="block text-lg font-semibold text-gray-700 mb-2">4. 所要時間（分）</label>
+                        <input type="number" id="duration" value="60" min="30" step="30" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <!-- Exclude Time Window -->
+                    <div class="mb-6">
+                        <label class="block text-lg font-semibold text-gray-700 mb-2">5. 除外する時間帯（毎日）</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="time" id="exclude-start-time" value="12:00" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
+                            <span class="text-gray-600">〜</span>
+                            <input type="time" id="exclude-end-time" value="13:00" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
+                        </div>
                     </div>
                 </div>
-
-                <!-- Date Range -->
-                <div class="mb-6">
-                    <label class="block text-lg font-semibold text-gray-700 mb-2">2. 期間</label>
-                    <div class="flex items-center space-x-2">
-                        <input type="date" id="start-date" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
-                        <span class="text-gray-600">〜</span>
-                        <input type="date" id="end-date" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
-                    </div>
-                </div>
-
-                <!-- Time Window -->
-                <div class="mb-6">
-                    <label class="block text-lg font-semibold text-gray-700 mb-2">3. 時間帯</label>
-                     <div class="flex items-center space-x-2">
-                        <input type="time" id="start-time" value="10:00" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
-                        <span class="text-gray-600">〜</span>
-                        <input type="time" id="end-time" value="19:00" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
-                    </div>
-                </div>
-
-                <!-- Meeting Duration -->
-                <div class="mb-6">
-                    <label for="duration" class="block text-lg font-semibold text-gray-700 mb-2">4. 所要時間（分）</label>
-                    <input type="number" id="duration" value="60" min="15" step="15" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
-                </div>
-
                 <!-- Generate Button -->
-                <div class="text-center mt-8">
+                <div class="text-center mt-auto pt-4">
                     <button id="generate-button" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center">
                         <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 20h5v-5M20 4h-5v5"></path></svg>
                         候補日程を生成
@@ -93,13 +103,13 @@
             </div>
 
             <!-- Output Panel -->
-            <div class="bg-white p-6 rounded-xl shadow-md">
+            <div class="bg-white p-6 rounded-xl shadow-md h-full flex flex-col">
                 <h2 class="text-2xl font-bold mb-6 border-b pb-3">ステップ3: テキストをコピー</h2>
-                <div id="loading-spinner" class="hidden flex justify-center items-center h-48">
+                <div id="loading-spinner" class="hidden flex-grow flex justify-center items-center">
                     <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24"></div>
                 </div>
-                <div id="result-area">
-                    <textarea id="output" rows="15" class="w-full p-3 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500" placeholder="ここに候補日程が出力されます。"></textarea>
+                <div id="result-area" class="flex-grow flex flex-col">
+                    <textarea id="output" rows="22" class="w-full p-3 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 flex-grow" placeholder="ここに候補日程が出力されます。"></textarea>
                     <button id="copy-button" class="mt-4 w-full bg-gray-700 hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center">
                         <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                         テキストをコピー
@@ -146,14 +156,13 @@
             tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CLIENT_ID,
                 scope: SCOPES,
-                callback: handleAuthResponse, // Use a dedicated callback function
+                callback: handleAuthResponse,
             });
             gisInited = true;
             maybeEnableButtons();
         }
 
         function maybeEnableButtons() {
-            // Enable the login button only after both APIs are initialized.
             if (gapiInited && gisInited) {
                 authorizeButton.disabled = false;
             }
@@ -162,10 +171,8 @@
         // --- Authentication ---
         function handleAuthClick() {
             if (gapi.client.getToken() === null) {
-                // Prompt the user to select an account and grant consent for the first time.
                 tokenClient.requestAccessToken({prompt: 'consent'});
             } else {
-                // Skip display of account chooser and consent dialog for subsequent calls.
                 tokenClient.requestAccessToken({prompt: ''});
             }
         }
@@ -173,14 +180,11 @@
         async function handleAuthResponse(resp) {
             const authMessage = document.getElementById('auth-message');
             if (resp.error !== undefined) {
-                // Don't throw an error, which causes an unhandled rejection.
-                // Instead, log the error and display a user-friendly message.
                 console.error('Google Auth Error:', resp);
                 authMessage.textContent = `認証に失敗しました: ${resp.error}. もう一度お試しください。`;
                 authMessage.classList.add('text-red-500');
                 return;
             }
-            // On success, reset the message.
             authMessage.textContent = 'ステップ1: Googleアカウントでログインしてください。';
             authMessage.classList.remove('text-red-500');
             await updateSigninStatus(true);
@@ -199,7 +203,6 @@
         };
 
         async function updateSigninStatus(isSignedIn) {
-            const authSection = document.getElementById('auth-section');
             const mainContent = document.getElementById('main-content');
             const userInfo = document.getElementById('user-info');
             const userEmail = document.getElementById('user-email');
@@ -209,7 +212,6 @@
                 userInfo.classList.remove('hidden');
                 mainContent.classList.remove('hidden');
                 
-                // Fetch user profile
                 try {
                     const primaryCal = await gapi.client.calendar.calendars.get({calendarId: 'primary'});
                     userEmail.textContent = `ログイン中: ${primaryCal.result.id}`;
@@ -293,18 +295,20 @@
                     throw new Error("確認するカレンダーを1つ以上選択してください。");
                 }
 
-                const startDate = document.getElementById('start-date').value;
-                const endDate = document.getElementById('end-date').value;
+                const startDateStr = document.getElementById('start-date').value;
+                const endDateStr = document.getElementById('end-date').value;
                 const startTime = document.getElementById('start-time').value;
                 const endTime = document.getElementById('end-time').value;
                 const duration = parseInt(document.getElementById('duration').value, 10);
+                const excludeStartTimeStr = document.getElementById('exclude-start-time').value;
+                const excludeEndTimeStr = document.getElementById('exclude-end-time').value;
 
-                if (!startDate || !endDate || !startTime || !endTime || !duration) {
+                if (!startDateStr || !endDateStr || !startTime || !endTime || !duration) {
                     throw new Error("すべての日時と所要時間を入力してください。");
                 }
 
-                const timeMin = new Date(`${startDate}T00:00:00`).toISOString();
-                const timeMax = new Date(`${endDate}T23:59:59`).toISOString();
+                const timeMin = new Date(`${startDateStr}T00:00:00`).toISOString();
+                const timeMax = new Date(`${endDateStr}T23:59:59`).toISOString();
                 
                 const response = await gapi.client.calendar.freebusy.query({
                     timeMin,
@@ -322,7 +326,31 @@
                         });
                     });
                 });
+
+                // Add daily excluded time slots to busyTimes
+                if (excludeStartTimeStr && excludeEndTimeStr) {
+                    const [excludeStartHour, excludeStartMinute] = excludeStartTimeStr.split(':').map(Number);
+                    const [excludeEndHour, excludeEndMinute] = excludeEndTimeStr.split(':').map(Number);
+
+                    let currentDay = new Date(startDateStr);
+                    currentDay.setHours(0, 0, 0, 0);
+                    const endDay = new Date(endDateStr);
+                    endDay.setHours(0, 0, 0, 0);
+
+                    while (currentDay <= endDay) {
+                        const excludeStart = new Date(currentDay);
+                        excludeStart.setHours(excludeStartHour, excludeStartMinute, 0, 0);
+                        const excludeEnd = new Date(currentDay);
+                        excludeEnd.setHours(excludeEndHour, excludeEndMinute, 0, 0);
+                        
+                        if (excludeEnd > excludeStart) {
+                            busyTimes.push({ start: excludeStart, end: excludeEnd });
+                        }
+                        currentDay.setDate(currentDay.getDate() + 1);
+                    }
+                }
                 
+                // Sort and merge all busy times
                 busyTimes.sort((a, b) => a.start - b.start);
                 const mergedBusyTimes = [];
                 if (busyTimes.length > 0) {
@@ -340,8 +368,8 @@
                 }
 
                 const availableSlots = findAvailableSlots(
-                    new Date(startDate), 
-                    new Date(endDate), 
+                    new Date(startDateStr), 
+                    new Date(endDateStr), 
                     startTime, 
                     endTime, 
                     duration, 
@@ -395,7 +423,8 @@
 
                     if (isAvailable) {
                         daySlots.push(new Date(slotStart));
-                        slotStart.setMinutes(slotStart.getMinutes() + 15);
+                        // Find next slot in 30-minute intervals
+                        slotStart.setMinutes(slotStart.getMinutes() + 30);
                     }
                 }
                 
@@ -414,7 +443,7 @@
             }
 
             const weekdays = ['(日)', '(月)', '(火)', '(水)', '(木)', '(金)', '(土)'];
-            let text = "ご都合いかがでしょうか？\n\n";
+            let text = "下記日時でご都合いかがでしょうか？\n\n";
 
             availableSlots.forEach(dayData => {
                 const date = dayData.date;
@@ -431,7 +460,7 @@
                 text += "\n";
             });
             
-            text += "上記以外でも調整可能ですので、ご希望をお知らせください。";
+            text += "ご確認、よろしくお願いいたします。";
             return text;
         }
 
@@ -455,7 +484,6 @@
 
         // --- Key Validation and API Loading ---
         if (CLIENT_ID.startsWith('YOUR_') || API_KEY.startsWith('YOUR_')) {
-            // If keys are placeholders, display an error and disable functionality.
             const authMessage = document.getElementById('auth-message');
             authMessage.innerHTML = '<span class="font-bold text-red-600">設定が必要です</span>';
             
@@ -469,7 +497,6 @@
             authorizeButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
             authorizeButton.innerHTML = '<span>設定が必要です</span>';
         } else {
-            // Keys seem to be present, so load the Google API scripts.
             const scriptGis = document.createElement('script');
             scriptGis.src = 'https://accounts.google.com/gsi/client';
             scriptGis.async = true;
