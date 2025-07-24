@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日程調整テキスト生成ツール</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://apis.google.com/js/api.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+        }
+        .loader {
+            border-top-color: #3498db;
+            -webkit-animation: spin 1s linear infinite;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-6xl">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900">日程調整テキスト生成ツール</h1>
+            <p class="text-gray-600 mt-2">Googleカレンダーと連携して、候補日程を簡単にリストアップします。</p>
+        </header>
+
+        <!-- Authentication Section -->
+        <div id="auth-section" class="text-center mb-8 p-6 bg-white rounded-xl shadow-md">
+            <p id="auth-message" class="text-lg mb-4">ステップ1: Googleアカウントでログインしてください。</p>
+            <button id="authorize_button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center mx-auto">
+                <svg class="w-6 h-6 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48px" height="48px"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.089,5.571l6.19,5.238C42.012,35.846,44,30.138,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+                Googleでログイン
+            </button>
+            <div id="user-info" class="hidden mt-4">
+                <p class="text-green-600 font-semibold">ログイン成功！</p>
+                <p id="user-email" class="text-gray-700"></p>
+                <button id="signout_button" class="mt-2 text-sm text-blue-500 hover:underline">ログアウト</button>
+            </div>
+        </div>
+
+        <main id="main-content" class="hidden grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Settings Panel -->
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h2 class="text-2xl font-bold mb-6 border-b pb-3">ステップ2: 条件を設定</h2>
+
+                <!-- Calendar Selection -->
+                <div class="mb-6">
+                    <label class="block text-lg font-semibold text-gray-700 mb-2">1. 空き時間を調べるカレンダー</label>
+                    <div id="calendar-list" class="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3 bg-gray-50">
+                        <p class="text-gray-500">カレンダーを読み込んでいます...</p>
+                    </div>
+                </div>
+
+                <!-- Date Range -->
+                <div class="mb-6">
+                    <label class="block text-lg font-semibold text-gray-700 mb-2">2. 期間</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="date" id="start-date" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
+                        <span class="text-gray-600">〜</span>
+                        <input type="date" id="end-date" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <!-- Time Window -->
+                <div class="mb-6">
+                    <label class="block text-lg font-semibold text-gray-700 mb-2">3. 時間帯</label>
+                     <div class="flex items-center space-x-2">
+                        <input type="time" id="start-time" value="10:00" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
+                        <span class="text-gray-600">〜</span>
+                        <input type="time" id="end-time" value="19:00" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <!-- Meeting Duration -->
+                <div class="mb-6">
+                    <label for="duration" class="block text-lg font-semibold text-gray-700 mb-2">4. 所要時間（分）</label>
+                    <input type="number" id="duration" value="60" min="15" step="15" class="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                <!-- Generate Button -->
+                <div class="text-center mt-8">
+                    <button id="generate-button" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 20h5v-5M20 4h-5v5"></path></svg>
+                        候補日程を生成
+                    </button>
+                </div>
+            </div>
+
+            <!-- Output Panel -->
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h2 class="text-2xl font-bold mb-6 border-b pb-3">ステップ3: テキストをコピー</h2>
+                <div id="loading-spinner" class="hidden flex justify-center items-center h-48">
+                    <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-200 h-24 w-24"></div>
+                </div>
+                <div id="result-area">
+                    <textarea id="output" rows="15" class="w-full p-3 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500" placeholder="ここに候補日程が出力されます。"></textarea>
+                    <button id="copy-button" class="mt-4 w-full bg-gray-700 hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                        テキストをコピー
+                    </button>
+                    <p id="copy-feedback" class="text-center text-green-500 mt-2 h-5"></p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ▼▼▼▼▼ ここに取得したキーを貼り付けてください ▼▼▼▼▼
+        const CLIENT_ID = '608279178775-b67e69o5p1cqb4a6la1j8obrv6tnrptb.apps.googleusercontent.com'; // 例: '1234567890-abcde.apps.googleusercontent.com'
+        const API_KEY = 'AIzaSyBSNVYNatezUnGOKLHaOb-qcamEs9cKbac';     // 例: 'AIzaSyABCDEfghij...'
+        // ▲▲▲▲▲ ここまで ▲▲▲▲▲
+
+        const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"];
+        const SCOPES = "https://www.googleapis.com/auth/calendar.readonly";
+
+        const authorizeButton = document.getElementById('authorize_button');
+        const signoutButton = document.getElementById('signout_button');
+        const generateButton = document.getElementById('generate-button');
+        const copyButton = document.getElementById('copy-button');
+        
+        let gapiInited = false;
+        let gisInited = false;
+        let tokenClient;
+
+        // --- Initialization ---
+        function gapiLoaded() {
+            gapi.load('client', initializeGapiClient);
+        }
+
+        async function initializeGapiClient() {
+            await gapi.client.init({
+                apiKey: API_KEY,
+                discoveryDocs: DISCOVERY_DOCS,
+            });
+            gapiInited = true;
+            maybeEnableButtons();
+        }
+
+        function gisLoaded() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: SCOPES,
+                callback: handleAuthResponse, // Use a dedicated callback function
+            });
+            gisInited = true;
+            maybeEnableButtons();
+        }
+
+        function maybeEnableButtons() {
+            // Enable the login button only after both APIs are initialized.
+            if (gapiInited && gisInited) {
+                authorizeButton.disabled = false;
+            }
+        }
+
+        // --- Authentication ---
+        function handleAuthClick() {
+            if (gapi.client.getToken() === null) {
+                // Prompt the user to select an account and grant consent for the first time.
+                tokenClient.requestAccessToken({prompt: 'consent'});
+            } else {
+                // Skip display of account chooser and consent dialog for subsequent calls.
+                tokenClient.requestAccessToken({prompt: ''});
+            }
+        }
+        
+        async function handleAuthResponse(resp) {
+            const authMessage = document.getElementById('auth-message');
+            if (resp.error !== undefined) {
+                // Don't throw an error, which causes an unhandled rejection.
+                // Instead, log the error and display a user-friendly message.
+                console.error('Google Auth Error:', resp);
+                authMessage.textContent = `認証に失敗しました: ${resp.error}. もう一度お試しください。`;
+                authMessage.classList.add('text-red-500');
+                return;
+            }
+            // On success, reset the message.
+            authMessage.textContent = 'ステップ1: Googleアカウントでログインしてください。';
+            authMessage.classList.remove('text-red-500');
+            await updateSigninStatus(true);
+        }
+
+        authorizeButton.onclick = handleAuthClick;
+
+        signoutButton.onclick = async () => {
+            const token = gapi.client.getToken();
+            if (token !== null) {
+                google.accounts.oauth2.revoke(token.access_token, () => {
+                    gapi.client.setToken('');
+                    updateSigninStatus(false);
+                });
+            }
+        };
+
+        async function updateSigninStatus(isSignedIn) {
+            const authSection = document.getElementById('auth-section');
+            const mainContent = document.getElementById('main-content');
+            const userInfo = document.getElementById('user-info');
+            const userEmail = document.getElementById('user-email');
+            
+            if (isSignedIn) {
+                authorizeButton.classList.add('hidden');
+                userInfo.classList.remove('hidden');
+                mainContent.classList.remove('hidden');
+                
+                // Fetch user profile
+                try {
+                    const primaryCal = await gapi.client.calendar.calendars.get({calendarId: 'primary'});
+                    userEmail.textContent = `ログイン中: ${primaryCal.result.id}`;
+                } catch (err) {
+                     console.error("Error fetching profile", err);
+                     userEmail.textContent = 'ユーザー情報の取得に失敗';
+                }
+
+                listCalendars();
+                setDefaultDates();
+            } else {
+                authorizeButton.classList.remove('hidden');
+                userInfo.classList.add('hidden');
+                mainContent.classList.add('hidden');
+                userEmail.textContent = '';
+                document.getElementById('calendar-list').innerHTML = '';
+                document.getElementById('output').value = '';
+            }
+        }
+
+        // --- Calendar Logic ---
+        async function listCalendars() {
+            const calendarListEl = document.getElementById('calendar-list');
+            calendarListEl.innerHTML = '<p class="text-gray-500">カレンダーを読み込んでいます...</p>';
+            try {
+                const response = await gapi.client.calendar.calendarList.list();
+                const calendars = response.result.items;
+                calendarListEl.innerHTML = '';
+                if (calendars && calendars.length > 0) {
+                    calendars.forEach(calendar => {
+                        if(calendar.accessRole === 'reader' || calendar.accessRole === 'freeBusyReader') return;
+
+                        const div = document.createElement('div');
+                        div.className = 'flex items-center';
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.id = calendar.id;
+                        checkbox.value = calendar.id;
+                        checkbox.className = 'h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500';
+                        checkbox.checked = calendar.primary === true;
+
+                        const label = document.createElement('label');
+                        label.htmlFor = calendar.id;
+                        label.textContent = calendar.summary;
+                        label.className = 'ml-3 block text-sm font-medium text-gray-700';
+
+                        div.appendChild(checkbox);
+                        div.appendChild(label);
+                        calendarListEl.appendChild(div);
+                    });
+                } else {
+                    calendarListEl.innerHTML = '<p class="text-red-500">利用可能なカレンダーが見つかりません。</p>';
+                }
+            } catch (err) {
+                console.error('Execute error', err);
+                calendarListEl.innerHTML = `<p class="text-red-500">カレンダーの読み込みに失敗しました: ${err.message}</p>`;
+            }
+        }
+        
+        function setDefaultDates() {
+            const today = new Date();
+            const twoWeeksLater = new Date();
+            twoWeeksLater.setDate(today.getDate() + 14);
+
+            document.getElementById('start-date').valueAsDate = today;
+            document.getElementById('end-date').valueAsDate = twoWeeksLater;
+        }
+
+        generateButton.onclick = async () => {
+            const outputEl = document.getElementById('output');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const resultArea = document.getElementById('result-area');
+
+            outputEl.value = '';
+            loadingSpinner.classList.remove('hidden');
+            resultArea.classList.add('hidden');
+
+            try {
+                const selectedCalendars = Array.from(document.querySelectorAll('#calendar-list input:checked')).map(cb => ({ id: cb.value }));
+                if (selectedCalendars.length === 0) {
+                    throw new Error("確認するカレンダーを1つ以上選択してください。");
+                }
+
+                const startDate = document.getElementById('start-date').value;
+                const endDate = document.getElementById('end-date').value;
+                const startTime = document.getElementById('start-time').value;
+                const endTime = document.getElementById('end-time').value;
+                const duration = parseInt(document.getElementById('duration').value, 10);
+
+                if (!startDate || !endDate || !startTime || !endTime || !duration) {
+                    throw new Error("すべての日時と所要時間を入力してください。");
+                }
+
+                const timeMin = new Date(`${startDate}T00:00:00`).toISOString();
+                const timeMax = new Date(`${endDate}T23:59:59`).toISOString();
+                
+                const response = await gapi.client.calendar.freebusy.query({
+                    timeMin,
+                    timeMax,
+                    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    items: selectedCalendars,
+                });
+
+                const busyTimes = [];
+                Object.values(response.result.calendars).forEach(cal => {
+                    cal.busy.forEach(b => {
+                        busyTimes.push({
+                            start: new Date(b.start),
+                            end: new Date(b.end)
+                        });
+                    });
+                });
+                
+                busyTimes.sort((a, b) => a.start - b.start);
+                const mergedBusyTimes = [];
+                if (busyTimes.length > 0) {
+                    let currentBusy = { ...busyTimes[0] };
+                    for (let i = 1; i < busyTimes.length; i++) {
+                        const nextBusy = busyTimes[i];
+                        if (nextBusy.start < currentBusy.end) {
+                            currentBusy.end = new Date(Math.max(currentBusy.end, nextBusy.end));
+                        } else {
+                            mergedBusyTimes.push(currentBusy);
+                            currentBusy = { ...nextBusy };
+                        }
+                    }
+                    mergedBusyTimes.push(currentBusy);
+                }
+
+                const availableSlots = findAvailableSlots(
+                    new Date(startDate), 
+                    new Date(endDate), 
+                    startTime, 
+                    endTime, 
+                    duration, 
+                    mergedBusyTimes
+                );
+                
+                outputEl.value = formatAvailableSlots(availableSlots);
+
+            } catch (err) {
+                outputEl.value = `エラーが発生しました: ${err.message}`;
+                console.error(err);
+            } finally {
+                loadingSpinner.classList.add('hidden');
+                resultArea.classList.remove('hidden');
+            }
+        };
+
+        function findAvailableSlots(startDate, endDate, startTimeStr, endTimeStr, durationMinutes, busyTimes) {
+            const availableSlots = [];
+            const [startHour, startMinute] = startTimeStr.split(':').map(Number);
+            const [endHour, endMinute] = endTimeStr.split(':').map(Number);
+
+            let currentDay = new Date(startDate);
+            currentDay.setHours(0, 0, 0, 0);
+
+            while (currentDay <= endDate) {
+                const daySlots = [];
+                const searchStart = new Date(currentDay);
+                searchStart.setHours(startHour, startMinute, 0, 0);
+
+                const searchEnd = new Date(currentDay);
+                searchEnd.setHours(endHour, endMinute, 0, 0);
+
+                let slotStart = new Date(searchStart);
+
+                while (slotStart < searchEnd) {
+                    const slotEnd = new Date(slotStart.getTime() + durationMinutes * 60 * 1000);
+
+                    if (slotEnd > searchEnd) {
+                        break;
+                    }
+
+                    let isAvailable = true;
+                    for (const busy of busyTimes) {
+                        if (slotStart < busy.end && slotEnd > busy.start) {
+                            isAvailable = false;
+                            slotStart = new Date(busy.end);
+                            break;
+                        }
+                    }
+
+                    if (isAvailable) {
+                        daySlots.push(new Date(slotStart));
+                        slotStart.setMinutes(slotStart.getMinutes() + 15);
+                    }
+                }
+                
+                if (daySlots.length > 0) {
+                    availableSlots.push({ date: new Date(currentDay), slots: daySlots });
+                }
+
+                currentDay.setDate(currentDay.getDate() + 1);
+            }
+            return availableSlots;
+        }
+
+        function formatAvailableSlots(availableSlots) {
+            if (availableSlots.length === 0) {
+                return "指定された条件での空き時間が見つかりませんでした。";
+            }
+
+            const weekdays = ['(日)', '(月)', '(火)', '(水)', '(木)', '(金)', '(土)'];
+            let text = "ご都合いかがでしょうか？\n\n";
+
+            availableSlots.forEach(dayData => {
+                const date = dayData.date;
+                const month = date.getMonth() + 1;
+                const day = date.getDate();
+                const weekday = weekdays[date.getDay()];
+                text += `${month}月${day}日${weekday}\n`;
+
+                dayData.slots.forEach(slot => {
+                    const startHour = slot.getHours().toString().padStart(2, '0');
+                    const startMinute = slot.getMinutes().toString().padStart(2, '0');
+                    text += `・${startHour}:${startMinute}〜\n`;
+                });
+                text += "\n";
+            });
+            
+            text += "上記以外でも調整可能ですので、ご希望をお知らせください。";
+            return text;
+        }
+
+
+        // --- UI Helpers ---
+        copyButton.onclick = () => {
+            const output = document.getElementById('output');
+            output.select();
+            try {
+                document.execCommand('copy');
+                const feedback = document.getElementById('copy-feedback');
+                feedback.textContent = 'コピーしました！';
+                setTimeout(() => { feedback.textContent = ''; }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                const feedback = document.getElementById('copy-feedback');
+                feedback.textContent = 'コピーに失敗しました。';
+                 setTimeout(() => { feedback.textContent = ''; }, 2000);
+            }
+        };
+
+        // --- Key Validation and API Loading ---
+        if (CLIENT_ID.startsWith('YOUR_') || API_KEY.startsWith('YOUR_')) {
+            // If keys are placeholders, display an error and disable functionality.
+            const authMessage = document.getElementById('auth-message');
+            authMessage.innerHTML = '<span class="font-bold text-red-600">設定が必要です</span>';
+            
+            const instructions = document.createElement('p');
+            instructions.className = 'text-gray-600 mt-2 text-sm';
+            instructions.innerHTML = 'このツールを使用するには、コード内の `CLIENT_ID` と `API_KEY` をご自身の有効な認証情報に置き換える必要があります。';
+            authMessage.parentNode.insertBefore(instructions, authorizeButton);
+
+            authorizeButton.disabled = true;
+            authorizeButton.classList.add('bg-gray-400', 'cursor-not-allowed', 'opacity-50');
+            authorizeButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            authorizeButton.innerHTML = '<span>設定が必要です</span>';
+        } else {
+            // Keys seem to be present, so load the Google API scripts.
+            const scriptGis = document.createElement('script');
+            scriptGis.src = 'https://accounts.google.com/gsi/client';
+            scriptGis.async = true;
+            scriptGis.defer = true;
+            scriptGis.onload = gisLoaded;
+            document.body.appendChild(scriptGis);
+
+            const scriptGapi = document.createElement('script');
+            scriptGapi.src = 'https://apis.google.com/js/api.js';
+            scriptGapi.async = true;
+            scriptGapi.defer = true;
+            scriptGapi.onload = gapiLoaded;
+            document.body.appendChild(scriptGapi);
+        }
+
+    </script>
+</body>
+</html>
