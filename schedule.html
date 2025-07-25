@@ -121,10 +121,16 @@
                 </div>
                 <div id="result-area" class="flex-grow flex flex-col">
                     <textarea id="output" rows="22" class="w-full p-3 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 flex-grow" placeholder="ここに候補日程が出力されます。"></textarea>
-                    <button id="copy-button" class="mt-4 w-full bg-gray-700 hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center">
-                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                        テキストをコピー
-                    </button>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                        <button id="copy-button" class="w-full bg-gray-700 hover:bg-gray-800 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center">
+                            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            テキストをコピー
+                        </button>
+                         <a href="https://calendar.google.com/" target="_blank" rel="noopener noreferrer" id="open-calendar-button" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center">
+                             <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            自分のカレンダーを開く
+                        </a>
+                    </div>
                     <p id="copy-feedback" class="text-center text-green-500 mt-2 h-5"></p>
                 </div>
             </div>
@@ -134,7 +140,7 @@
     <script>
         // ▼▼▼▼▼ ここに取得したキーを貼り付けてください ▼▼▼▼▼
         const CLIENT_ID = '608279178775-b67e69o5p1cqb4a6la1j8obrv6tnrptb.apps.googleusercontent.com'; // 例: '1234567890-abcde.apps.googleusercontent.com'
-        const API_KEY = 'AIzaSyC0t3gHPTYhKXp1Rb_3Tz0oH93HGwHk8Wg';     // 例: 'AIzaSyABCDEfghij...'
+        const API_KEY = 'AIzaSyBSNVYNatezUnGOKLHaOb-qcamEs9cKbac';     // 例: 'AIzaSyABCDEfghij...'
         // ▲▲▲▲▲ ここまで ▲▲▲▲▲
 
         const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"];
@@ -173,10 +179,7 @@
                 callback: handleAuthResponse,
             });
             gisInited = true;
-            // Try a silent login on page load
-            if (gapi.client.getToken() === null) {
-                 tokenClient.requestAccessToken({prompt: 'none'});
-            }
+            tokenClient.requestAccessToken({prompt: 'none'});
         }
 
         function maybeEnableButtons() {
@@ -195,14 +198,11 @@
         }
         
         async function handleAuthResponse(resp) {
-            const authMessage = document.getElementById('auth-message');
             if (resp.error !== undefined) {
                 console.log('Silent login failed or user not logged in.');
                 updateSigninStatus(false);
                 return;
             }
-            authMessage.textContent = 'ステップ1: Googleアカウントでログインしてください。';
-            authMessage.classList.remove('text-red-500');
             await updateSigninStatus(true);
         }
 
@@ -219,14 +219,14 @@
         };
 
         async function updateSigninStatus(isSignedIn) {
+            const authSection = document.getElementById('auth-section');
             const mainContent = document.getElementById('main-content');
             const userInfo = document.getElementById('user-info');
             const userEmail = document.getElementById('user-email');
             
             if (isSignedIn) {
-                authorizeButton.style.display = 'none';
-                userInfo.style.display = 'block';
-                mainContent.style.display = 'grid';
+                authSection.classList.add('hidden');
+                mainContent.classList.remove('hidden');
                 
                 try {
                     const primaryCal = await gapi.client.calendar.calendars.get({calendarId: 'primary'});
@@ -239,12 +239,8 @@
                 listCalendars();
                 setDefaultDates();
             } else {
-                authorizeButton.style.display = 'flex';
-                userInfo.style.display = 'none';
-                mainContent.style.display = 'none';
-                userEmail.textContent = '';
-                document.getElementById('calendar-list').innerHTML = '';
-                document.getElementById('output').value = '';
+                authSection.classList.remove('hidden');
+                mainContent.classList.add('hidden');
             }
         }
 
@@ -367,7 +363,6 @@
                         timeMin: timeMin,
                         timeMax: timeMax,
                         singleEvents: true,
-                        orderBy: 'startTime'
                     });
                     const holidays = holidayResponse.result.items;
                     if (holidays && holidays.length > 0) {
