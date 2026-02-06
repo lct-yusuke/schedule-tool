@@ -52,9 +52,14 @@
                     <!-- Calendar Selection -->
                     <div class="mb-4">
                         <label class="block text-lg font-semibold text-gray-700 mb-2">1. 空き時間を調べるカレンダー</label>
-                        <div id="calendar-list" class="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3 bg-gray-50">
+                        <div id="calendar-list" class="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3 bg-gray-50 mb-2">
                             <p class="text-gray-500">カレンダーを読み込んでいます...</p>
                         </div>
+                        <div class="flex space-x-2">
+                            <input type="email" id="new-calendar-id" placeholder="追加したい人のメールアドレス" class="flex-grow p-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500">
+                            <button id="add-calendar-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-md text-sm whitespace-nowrap">追加</button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">※社員のカレンダーが表示されない場合は、ここでメールアドレスを入力して追加してください。</p>
                     </div>
 
                     <!-- Date Range -->
@@ -140,7 +145,7 @@
     <script>
         // ▼▼▼▼▼ ここに取得したキーを貼り付けてください ▼▼▼▼▼
         const CLIENT_ID = '608279178775-b67e69o5p1cqb4a6la1j8obrv6tnrptb.apps.googleusercontent.com'; // 例: '1234567890-abcde.apps.googleusercontent.com'
-        const API_KEY = 'AIzaSyC0t3gHPTYhKXp1Rb_3Tz0oH93HGwHk8Wg';     // 例: 'AIzaSyABCDEfghij...'
+        const API_KEY = 'AIzaSyBSNVYNatezUnGOKLHaOb-qcamEs9cKbac';     // 例: 'AIzaSyABCDEfghij...'
         // ▲▲▲▲▲ ここまで ▲▲▲▲▲
 
         const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"];
@@ -153,6 +158,8 @@
         const excludeTimeCheckbox = document.getElementById('exclude-time-checkbox');
         const excludeTimeInputs = document.getElementById('exclude-time-inputs');
         const excludeHolidaysCheckbox = document.getElementById('exclude-holidays-checkbox');
+        const addCalendarBtn = document.getElementById('add-calendar-btn');
+        const newCalendarInput = document.getElementById('new-calendar-id');
         
         let gapiInited = false;
         let gisInited = false;
@@ -531,6 +538,48 @@
             }
         });
 
+        // Add calendar helper
+        addCalendarBtn.onclick = () => {
+            const email = newCalendarInput.value.trim();
+            if (!email) return;
+
+            const existing = document.querySelector(`#calendar-list input[value="${email}"]`);
+            if (existing) {
+                existing.checked = true;
+                newCalendarInput.value = '';
+                return;
+            }
+
+            const calendarListEl = document.getElementById('calendar-list');
+            // Clear loading message if it exists
+            const loadingMsg = calendarListEl.querySelector('p.text-gray-500');
+            if (loadingMsg && loadingMsg.textContent === 'カレンダーを読み込んでいます...') {
+               // don't clear if loading, wait for load. 
+               // logic: if user adds before load, it will be appended.
+            }
+
+            const div = document.createElement('div');
+            div.className = 'flex items-center';
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = email;
+            checkbox.value = email;
+            checkbox.className = 'h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500';
+            checkbox.checked = true;
+
+            const label = document.createElement('label');
+            label.htmlFor = email;
+            label.textContent = email;
+            label.className = 'ml-3 block text-sm font-medium text-gray-700 break-all';
+
+            div.appendChild(checkbox);
+            div.appendChild(label);
+            calendarListEl.appendChild(div);
+            
+            calendarListEl.scrollTop = calendarListEl.scrollHeight;
+            newCalendarInput.value = '';
+        };
+
         copyButton.onclick = () => {
             const output = document.getElementById('output');
             output.select();
@@ -580,3 +629,4 @@
     </script>
 </body>
 </html>
+```eof
