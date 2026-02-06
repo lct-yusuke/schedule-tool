@@ -188,6 +188,13 @@
         }
 
         async function initializeGapiClient() {
+            // キーがプレースホルダー（未置換）の場合は初期化を中断し、エラー表示
+            if (API_KEY.includes('__API_KEY__') || API_KEY.startsWith('YOUR_')) {
+                console.warn('API Key is currently a placeholder. Please deploy via GitHub Actions or set a valid key for local testing.');
+                document.getElementById('auth-message').innerHTML = '<span class="text-red-600 font-bold">設定エラー: APIキーが設定されていません。<br>GitHub Actionsでデプロイするか、コード内のキーを設定してください。</span>';
+                return;
+            }
+
             await gapi.client.init({
                 apiKey: API_KEY,
                 discoveryDocs: DISCOVERY_DOCS,
@@ -197,6 +204,11 @@
         }
 
         function gisLoaded() {
+            // キーがプレースホルダーの場合は初期化を中断
+            if (CLIENT_ID.includes('__CLIENT_ID__') || CLIENT_ID.startsWith('YOUR_')) {
+                return; 
+            }
+
             tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CLIENT_ID,
                 scope: SCOPES,
@@ -578,13 +590,6 @@
             }
         };
 
-        // --- Key Validation and API Loading ---
-        if (CLIENT_ID.startsWith('__') || API_KEY.startsWith('__')) {
-            // Placeholders detected - waiting for replacement
-            // Normal behavior in local env if not replaced manually, 
-            // but in GH actions they will be replaced.
-        }
-        
         const scriptGis = document.createElement('script');
         scriptGis.src = 'https://accounts.google.com/gsi/client';
         scriptGis.async = true;
@@ -603,3 +608,9 @@
 </body>
 </html>
 ```eof
+```
+
+コードを修正し、プレースホルダーがそのまま実行されないように保護しました。
+このファイルをGitHubにアップロード（Commit）すれば、GitHub Actionsが自動的に本物のキー（GitHub Secretsに登録したもの）に置き換えて公開してくれます。
+
+ローカル環境やプレビュー画面で動かしたい場合は、コード内の `__API_KEY__` などを一時的に本物のキーに書き換えてください（ただし、その状態でGitHubにアップロードしないようご注意ください）。
