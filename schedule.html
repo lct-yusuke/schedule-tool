@@ -33,7 +33,7 @@
         <!-- Authentication Section -->
         <div id="auth-section" class="text-center mb-8 p-6 bg-white rounded-xl shadow-md">
             <p id="auth-message" class="text-lg mb-4">ステップ1: Googleアカウントでログインしてください。</p>
-            <button id="authorize_button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center mx-auto">
+            <button id="authorize_button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center mx-auto disabled:opacity-50 disabled:cursor-not-allowed">
                 <svg class="w-6 h-6 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48px" height="48px"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.089,5.571l6.19,5.238C42.012,35.846,44,30.138,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
                 Googleでログイン
             </button>
@@ -127,11 +127,11 @@
                 <div id="result-area" class="flex-grow flex flex-col">
                     <textarea id="output" rows="22" class="w-full p-3 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 flex-grow" placeholder="ここに候補日程が出力されます。"></textarea>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                        <button id="copy-button" class="w-full bg-gray-700 hover:bg-gray-800 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center">
+                        <button id="copy-button" class="w-full bg-gray-700 hover:bg-gray-800 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center whitespace-nowrap">
                             <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                             テキストをコピー
                         </button>
-                         <a href="https://calendar.google.com/" target="_blank" rel="noopener noreferrer" id="open-calendar-button" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center">
+                         <a href="https://calendar.google.com/" target="_blank" rel="noopener noreferrer" id="open-calendar-button" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg shadow-lg transition-transform transform hover:scale-105 flex items-center justify-center whitespace-nowrap">
                              <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                             自分のカレンダー
                         </a>
@@ -143,9 +143,9 @@
     </div>
 
     <script>
-        // ▼▼▼▼▼ ここに取得したキーを貼り付けてください ▼▼▼▼▼
-        const CLIENT_ID = '608279178775-b67e69o5p1cqb4a6la1j8obrv6tnrptb.apps.googleusercontent.com'; // 例: '1234567890-abcde.apps.googleusercontent.com'
-        const API_KEY = 'AIzaSyBSNVYNatezUnGOKLHaOb-qcamEs9cKbac';     // 例: 'AIzaSyABCDEfghij...'
+        // ▼▼▼▼▼ 【重要】ここに取得した新しいキーを貼り付けてください ▼▼▼▼▼
+        const CLIENT_ID = '608279178775-0kg3hufhov30bnbf1vmpr95pb6sdrotl.apps.googleusercontent.com'; // 例: '1234567890-abcde.apps.googleusercontent.com'
+        const API_KEY = 'AIzaSyDp69GwFIBZd4-6zpjVssXiVjPwuXZTNn0';     // 例: 'AIzaSyABCDEfghij...'
         // ▲▲▲▲▲ ここまで ▲▲▲▲▲
 
         const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"];
@@ -176,7 +176,7 @@
                 discoveryDocs: DISCOVERY_DOCS,
             });
             gapiInited = true;
-            maybeEnableButtons();
+            attemptAutoLogin(); // 準備ができたら自動ログインを試みる
         }
 
         function gisLoaded() {
@@ -186,11 +186,19 @@
                 callback: handleAuthResponse,
             });
             gisInited = true;
-            tokenClient.requestAccessToken({prompt: 'none'});
+            attemptAutoLogin(); // 準備ができたら自動ログインを試みる
         }
 
-        function maybeEnableButtons() {
+        function attemptAutoLogin() {
+            // 両方のSDKがロード完了しているかチェック
             if (gapiInited && gisInited) {
+                // 既にトークンがあるかチェック
+                if (gapi.client.getToken() === null) {
+                    // サイレントログインを試行
+                    tokenClient.requestAccessToken({prompt: 'none'});
+                } else {
+                    updateSigninStatus(true);
+                }
                 authorizeButton.disabled = false;
             }
         }
@@ -205,8 +213,9 @@
         }
         
         async function handleAuthResponse(resp) {
-            if (resp.error !== undefined) {
-                console.log('Silent login failed or user not logged in.');
+            if (resp.error !== undefined && resp.error !== 'popup_closed_by_user') {
+                // サイレントログイン失敗時などはログを出してボタン表示のままにする
+                console.log('Login required or error:', resp.error);
                 updateSigninStatus(false);
                 return;
             }
@@ -254,6 +263,9 @@
         // --- Calendar Logic ---
         async function listCalendars() {
             const calendarListEl = document.getElementById('calendar-list');
+            // Don't clear if already populated to avoid flickering on re-auth
+            if (calendarListEl.children.length > 1) return;
+
             calendarListEl.innerHTML = '<p class="text-gray-500">カレンダーを読み込んでいます...</p>';
             try {
                 const response = await gapi.client.calendar.calendarList.list();
@@ -551,11 +563,9 @@
             }
 
             const calendarListEl = document.getElementById('calendar-list');
-            // Clear loading message if it exists
             const loadingMsg = calendarListEl.querySelector('p.text-gray-500');
             if (loadingMsg && loadingMsg.textContent === 'カレンダーを読み込んでいます...') {
                // don't clear if loading, wait for load. 
-               // logic: if user adds before load, it will be appended.
             }
 
             const div = document.createElement('div');
@@ -629,4 +639,3 @@
     </script>
 </body>
 </html>
-```eof
