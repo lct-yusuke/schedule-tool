@@ -52,14 +52,10 @@
                     <!-- Calendar Selection -->
                     <div class="mb-4">
                         <label class="block text-lg font-semibold text-gray-700 mb-2">1. 空き時間を調べるカレンダー</label>
-                        <div id="calendar-list" class="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3 bg-gray-50 mb-2">
+                        <div id="calendar-list" class="space-y-1 max-h-60 overflow-y-auto border rounded-lg p-3 bg-gray-50 mb-2">
                             <p class="text-gray-500">カレンダーを読み込んでいます...</p>
                         </div>
-                        <div class="flex space-x-2">
-                            <input type="email" id="new-calendar-id" placeholder="追加したい人のメールアドレス" class="flex-grow p-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500">
-                            <button id="add-calendar-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-md text-sm whitespace-nowrap">追加</button>
-                        </div>
-                        <p class="text-xs text-gray-500 mt-1">※社員のカレンダーが表示されない場合は、ここでメールアドレスを入力して追加してください。</p>
+                        <p class="text-xs text-gray-500 mt-1">※チェックを入れたメンバー・リソースの空き時間を検索します。</p>
                     </div>
 
                     <!-- Date Range -->
@@ -143,13 +139,35 @@
     </div>
 
     <script>
-        // ▼▼▼▼▼ 【重要】ここに取得した新しいキーを貼り付けてください ▼▼▼▼▼
-        const CLIENT_ID = '608279178775-0kg3hufhov30bnbf1vmpr95pb6sdrotl.apps.googleusercontent.com'; // 例: '1234567890-abcde.apps.googleusercontent.com'
-        const API_KEY = 'AIzaSyDp69GwFIBZd4-6zpjVssXiVjPwuXZTNn0';     // 例: 'AIzaSyABCDEfghij...'
+        // ▼▼▼▼▼ GitHub Actionsで自動置換されるプレースホルダー ▼▼▼▼▼
+        const CLIENT_ID = '__CLIENT_ID__'; 
+        const API_KEY = '__API_KEY__';     
         // ▲▲▲▲▲ ここまで ▲▲▲▲▲
 
         const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"];
         const SCOPES = "https://www.googleapis.com/auth/calendar.readonly";
+
+        // 常時表示するカレンダーリスト定義
+        const FIXED_CALENDARS = [
+            { id: 'yusuke@lct.jp', summary: '山口' },
+            { id: 'takaaki@lct.jp', summary: '伊野' },
+            { id: 'syushi@lct.jp', summary: '山田' },
+            { id: 'masakazu@lct.jp', summary: '松延' },
+            { id: 'yoshihisa@lct.jp', summary: '赤窄' },
+            { id: 'gentaro@lct.jp', summary: '中村' },
+            { id: 'yohei@lct.jp', summary: '橋本' },
+            { id: 'hiroshi@lct.jp', summary: '徳田' },
+            { id: 'shouta@lct.jp', summary: '福田' },
+            { id: 'yuji@lct.jp', summary: '野元' },
+            { id: 'mio@lct.jp', summary: '有馬' },
+            { id: 'asuka@lct.jp', summary: '児玉' },
+            { id: 'akinari@lct.jp', summary: '福中' },
+            { id: 'tomoyo@lct.jp', summary: '青木' },
+            { id: 'c_188d7852eutsah39lq12av59269n4@resource.calendar.google.com', summary: '会議室' },
+            { id: 'c_1880j0tbasftagpklob5996r8cn62@resource.calendar.google.com', summary: '集中ブース' },
+            { id: 'c_18825utfj6eaaioqm6j5e0e9bmh60@resource.calendar.google.com', summary: 'ZOOM' },
+            { id: 'c_188a22pfeu3rchraliusad9677pro@resource.calendar.google.com', summary: '社用車' }
+        ];
 
         const authorizeButton = document.getElementById('authorize_button');
         const signoutButton = document.getElementById('signout_button');
@@ -158,12 +176,11 @@
         const excludeTimeCheckbox = document.getElementById('exclude-time-checkbox');
         const excludeTimeInputs = document.getElementById('exclude-time-inputs');
         const excludeHolidaysCheckbox = document.getElementById('exclude-holidays-checkbox');
-        const addCalendarBtn = document.getElementById('add-calendar-btn');
-        const newCalendarInput = document.getElementById('new-calendar-id');
         
         let gapiInited = false;
         let gisInited = false;
         let tokenClient;
+        let currentUserEmail = '';
 
         // --- Initialization ---
         function gapiLoaded() {
@@ -176,7 +193,7 @@
                 discoveryDocs: DISCOVERY_DOCS,
             });
             gapiInited = true;
-            attemptAutoLogin(); // 準備ができたら自動ログインを試みる
+            attemptAutoLogin(); 
         }
 
         function gisLoaded() {
@@ -186,15 +203,12 @@
                 callback: handleAuthResponse,
             });
             gisInited = true;
-            attemptAutoLogin(); // 準備ができたら自動ログインを試みる
+            attemptAutoLogin(); 
         }
 
         function attemptAutoLogin() {
-            // 両方のSDKがロード完了しているかチェック
             if (gapiInited && gisInited) {
-                // 既にトークンがあるかチェック
                 if (gapi.client.getToken() === null) {
-                    // サイレントログインを試行
                     tokenClient.requestAccessToken({prompt: 'none'});
                 } else {
                     updateSigninStatus(true);
@@ -214,7 +228,6 @@
         
         async function handleAuthResponse(resp) {
             if (resp.error !== undefined && resp.error !== 'popup_closed_by_user') {
-                // サイレントログイン失敗時などはログを出してボタン表示のままにする
                 console.log('Login required or error:', resp.error);
                 updateSigninStatus(false);
                 return;
@@ -246,7 +259,8 @@
                 
                 try {
                     const primaryCal = await gapi.client.calendar.calendars.get({calendarId: 'primary'});
-                    userEmail.textContent = `ログイン中: ${primaryCal.result.id}`;
+                    currentUserEmail = primaryCal.result.id;
+                    userEmail.textContent = `ログイン中: ${currentUserEmail}`;
                 } catch (err) {
                      console.error("Error fetching profile", err);
                      userEmail.textContent = 'ユーザー情報の取得に失敗';
@@ -257,49 +271,47 @@
             } else {
                 authSection.classList.remove('hidden');
                 mainContent.classList.add('hidden');
+                currentUserEmail = '';
             }
         }
 
         // --- Calendar Logic ---
-        async function listCalendars() {
+        
+        function renderCalendarItem(container, id, summary, isChecked) {
+            const div = document.createElement('div');
+            div.className = 'flex items-center justify-between p-1 hover:bg-gray-100 rounded';
+
+            const leftDiv = document.createElement('div');
+            leftDiv.className = 'flex items-center overflow-hidden flex-grow';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = id;
+            checkbox.value = id;
+            checkbox.className = 'h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 flex-shrink-0';
+            checkbox.checked = isChecked;
+
+            const label = document.createElement('label');
+            label.htmlFor = id;
+            label.textContent = summary || id;
+            label.className = 'ml-3 block text-sm font-medium text-gray-700 truncate cursor-pointer select-none w-full';
+            label.title = summary || id;
+
+            leftDiv.appendChild(checkbox);
+            leftDiv.appendChild(label);
+            div.appendChild(leftDiv);
+            container.appendChild(div);
+        }
+
+        function listCalendars() {
             const calendarListEl = document.getElementById('calendar-list');
-            // Don't clear if already populated to avoid flickering on re-auth
-            if (calendarListEl.children.length > 1) return;
+            calendarListEl.innerHTML = '';
 
-            calendarListEl.innerHTML = '<p class="text-gray-500">カレンダーを読み込んでいます...</p>';
-            try {
-                const response = await gapi.client.calendar.calendarList.list();
-                const calendars = response.result.items;
-                calendarListEl.innerHTML = '';
-                if (calendars && calendars.length > 0) {
-                    calendars.forEach(calendar => {
-                        if(calendar.accessRole === 'reader' || calendar.accessRole === 'freeBusyReader') return;
-
-                        const div = document.createElement('div');
-                        div.className = 'flex items-center';
-                        const checkbox = document.createElement('input');
-                        checkbox.type = 'checkbox';
-                        checkbox.id = calendar.id;
-                        checkbox.value = calendar.id;
-                        checkbox.className = 'h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500';
-                        checkbox.checked = calendar.primary === true;
-
-                        const label = document.createElement('label');
-                        label.htmlFor = calendar.id;
-                        label.textContent = calendar.summary;
-                        label.className = 'ml-3 block text-sm font-medium text-gray-700';
-
-                        div.appendChild(checkbox);
-                        div.appendChild(label);
-                        calendarListEl.appendChild(div);
-                    });
-                } else {
-                    calendarListEl.innerHTML = '<p class="text-red-500">利用可能なカレンダーが見つかりません。</p>';
-                }
-            } catch (err) {
-                console.error('Execute error', err);
-                calendarListEl.innerHTML = `<p class="text-red-500">カレンダーの読み込みに失敗しました: ${err.message}</p>`;
-            }
+            FIXED_CALENDARS.forEach(cal => {
+                // 自分自身のカレンダーだけデフォルトでチェックを入れる
+                const isMyCalendar = (cal.id === currentUserEmail);
+                renderCalendarItem(calendarListEl, cal.id, cal.summary, isMyCalendar);
+            });
         }
         
         function setDefaultDates() {
@@ -550,46 +562,6 @@
             }
         });
 
-        // Add calendar helper
-        addCalendarBtn.onclick = () => {
-            const email = newCalendarInput.value.trim();
-            if (!email) return;
-
-            const existing = document.querySelector(`#calendar-list input[value="${email}"]`);
-            if (existing) {
-                existing.checked = true;
-                newCalendarInput.value = '';
-                return;
-            }
-
-            const calendarListEl = document.getElementById('calendar-list');
-            const loadingMsg = calendarListEl.querySelector('p.text-gray-500');
-            if (loadingMsg && loadingMsg.textContent === 'カレンダーを読み込んでいます...') {
-               // don't clear if loading, wait for load. 
-            }
-
-            const div = document.createElement('div');
-            div.className = 'flex items-center';
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = email;
-            checkbox.value = email;
-            checkbox.className = 'h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500';
-            checkbox.checked = true;
-
-            const label = document.createElement('label');
-            label.htmlFor = email;
-            label.textContent = email;
-            label.className = 'ml-3 block text-sm font-medium text-gray-700 break-all';
-
-            div.appendChild(checkbox);
-            div.appendChild(label);
-            calendarListEl.appendChild(div);
-            
-            calendarListEl.scrollTop = calendarListEl.scrollHeight;
-            newCalendarInput.value = '';
-        };
-
         copyButton.onclick = () => {
             const output = document.getElementById('output');
             output.select();
@@ -607,35 +579,27 @@
         };
 
         // --- Key Validation and API Loading ---
-        if (CLIENT_ID.startsWith('YOUR_') || API_KEY.startsWith('YOUR_')) {
-            const authMessage = document.getElementById('auth-message');
-            authMessage.innerHTML = '<span class="font-bold text-red-600">設定が必要です</span>';
-            
-            const instructions = document.createElement('p');
-            instructions.className = 'text-gray-600 mt-2 text-sm';
-            instructions.innerHTML = 'このツールを使用するには、コード内の `CLIENT_ID` と `API_KEY` をご自身の有効な認証情報に置き換える必要があります。';
-            authMessage.parentNode.insertBefore(instructions, authorizeButton);
-
-            authorizeButton.disabled = true;
-            authorizeButton.classList.add('bg-gray-400', 'cursor-not-allowed', 'opacity-50');
-            authorizeButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-            authorizeButton.innerHTML = '<span>設定が必要です</span>';
-        } else {
-            const scriptGis = document.createElement('script');
-            scriptGis.src = 'https://accounts.google.com/gsi/client';
-            scriptGis.async = true;
-            scriptGis.defer = true;
-            scriptGis.onload = gisLoaded;
-            document.body.appendChild(scriptGis);
-
-            const scriptGapi = document.createElement('script');
-            scriptGapi.src = 'https://apis.google.com/js/api.js';
-            scriptGapi.async = true;
-            scriptGapi.defer = true;
-            scriptGapi.onload = gapiLoaded;
-            document.body.appendChild(scriptGapi);
+        if (CLIENT_ID.startsWith('__') || API_KEY.startsWith('__')) {
+            // Placeholders detected - waiting for replacement
+            // Normal behavior in local env if not replaced manually, 
+            // but in GH actions they will be replaced.
         }
+        
+        const scriptGis = document.createElement('script');
+        scriptGis.src = 'https://accounts.google.com/gsi/client';
+        scriptGis.async = true;
+        scriptGis.defer = true;
+        scriptGis.onload = gisLoaded;
+        document.body.appendChild(scriptGis);
+
+        const scriptGapi = document.createElement('script');
+        scriptGapi.src = 'https://apis.google.com/js/api.js';
+        scriptGapi.async = true;
+        scriptGapi.defer = true;
+        scriptGapi.onload = gapiLoaded;
+        document.body.appendChild(scriptGapi);
 
     </script>
 </body>
 </html>
+```eof
