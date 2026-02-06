@@ -26,8 +26,8 @@ jobs:
 
       - name: Replace Secrets
         run: |
-          sed -i "s/__CLIENT_ID__/${{ secrets.GOOGLE_CLIENT_ID }}/g" schedule.html
-          sed -i "s/__API_KEY__/${{ secrets.GOOGLE_API_KEY }}/g" schedule.html
+          sed -i "s/__CLIENT_ID__/${{ secrets.GOOGLE_CLIENT_ID }}/g" *.html
+          sed -i "s/__API_KEY__/${{ secrets.GOOGLE_API_KEY }}/g" *.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
